@@ -8,7 +8,7 @@ class LearningAgent(Agent):
     """ An agent that learns to drive in the Smartcab world.
         This is the object you will be modifying. """
 
-    def __init__(self, env, learning=False, epsilon=1.0, alpha=0.5):
+    def __init__(self, env, learning=True, epsilon=1.0, alpha=0.5):
         super(LearningAgent, self).__init__(env)     # Set the agent in the evironment 
         self.planner = RoutePlanner(self.env, self)  # Create a route planner
         self.valid_actions = self.env.valid_actions  # The set of valid actions
@@ -87,11 +87,12 @@ class LearningAgent(Agent):
         ###########
         # Calculate the maximum Q-value of all actions for a given state
 
-        maxQ = 0.0
-        for q_action, q_value in self.Q[str(state)].items():
-            if q_value > maxQ:
-                maxQ = q_value
-        return maxQ 
+        #maxQ = 0.0
+        #for q_action, q_value in self.Q[str(state)].items():
+        #    if q_value > maxQ:
+        #        maxQ = q_value
+        #return maxQ
+        return max(self.Q[str(state)].values())
 
 
     def createQ(self, state):
@@ -137,7 +138,8 @@ class LearningAgent(Agent):
             for q_action, q_value in self.Q[str(state)].items():
                 if q_value == maxQ:
                     actions_choose.append(q_action)
-            action = self.next_waypoint if self.next_waypoint in actions_choose else random.choice(actions_choose)
+            action = None if state[1]["light"] == "red" else self.next_waypoint if self.next_waypoint in actions_choose else random.choice(actions_choose)
+            #action = random.choice([act for act, Q in self.Q[state] if Q == self.get_maxQ(state)])
 
         return action
 
@@ -152,7 +154,9 @@ class LearningAgent(Agent):
         ###########
         # When learning, implement the value iteration update rule
         #   Use only the learning rate 'alpha' (do not use the discount factor 'gamma')
-        self.Q[str(state)][action] += self.alpha * (reward - self.Q[str(state)][action])
+        if self.learning:
+            self.Q[str(state)][action] += self.alpha * (reward - self.Q[str(state)][action])
+
         return
 
 
