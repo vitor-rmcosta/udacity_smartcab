@@ -39,10 +39,10 @@ class LearningAgent(Agent):
         # Update additional class parameters as needed
         # If 'testing' is True, set epsilon and alpha to 0
 
-        self.trial_number += 1
+        #self.trial_number += 1
 
-        #self.epsilon -= .05
-        self.epsilon = 1.0 / math.pow(self.trial_number, 2)
+        self.epsilon -= .003125
+        #self.epsilon = 1.0 / math.pow(self.trial_number, 2)
         #self.epsilon = math.pow(self.alpha, self.trial_number)
         #self.epsilon = math.pow(self.epsilon,-(self.alpha*self.trial_number))
         #self.epsilon = math.cos(self.alpha*self.trial_number)
@@ -73,7 +73,7 @@ class LearningAgent(Agent):
         # With the hand-engineered features, this learning process gets entirely negated.
         
         # Set 'state' as a tuple of relevant data for the agent        
-        state = (waypoint, inputs)
+        state = (waypoint,) + tuple(inputs.values())
 
         return state
 
@@ -92,7 +92,7 @@ class LearningAgent(Agent):
         #    if q_value > maxQ:
         #        maxQ = q_value
         #return maxQ
-        return max(self.Q[str(state)].values())
+        return max(self.Q[state].values())
 
 
     def createQ(self, state):
@@ -105,11 +105,8 @@ class LearningAgent(Agent):
         # If it is not, create a new dictionary for that state
         #   Then, for each action available, set the initial Q-value to 0.0
         if self.learning:
-            if str(state) not in self.Q:
-                actions_qvalues = {}
-                for valid_action in self.valid_actions:
-                    actions_qvalues[valid_action] = 0.0
-                self.Q[str(state)] = actions_qvalues
+            if state not in self.Q:
+                self.Q[state] = {action: 0.0 for action in self.valid_actions}
         return
 
 
@@ -120,7 +117,6 @@ class LearningAgent(Agent):
         # Set the agent state and default action
         self.state = state
         self.next_waypoint = self.planner.next_waypoint()
-
         ###########
         ## TO DO ##
         ###########
@@ -129,17 +125,13 @@ class LearningAgent(Agent):
         # Otherwise, choose an action with the highest Q-value for the current state
         # Be sure that when choosing an action with highest Q-value that you randomly select between actions that "tie".
         random_number = random.random()
-        if not self.learning or (self.learning and self.epsilon > random_number):
+        if not self.learning or (self.epsilon > random_number):
             action = random.choice(self.valid_actions)
         else:
-
             maxQ = self.get_maxQ(state)
-            actions_choose = []
-            for q_action, q_value in self.Q[str(state)].items():
-                if q_value == maxQ:
-                    actions_choose.append(q_action)
-            action = None if state[1]["light"] == "red" else self.next_waypoint if self.next_waypoint in actions_choose else random.choice(actions_choose)
-            #action = random.choice([act for act, Q in self.Q[state] if Q == self.get_maxQ(state)])
+            actions_choose = [act for act, Q in self.Q[state].items() if Q == maxQ]
+            action = random.choice(actions_choose)
+            #action = None if state[1]["light"] == "red" else self.next_waypoint if self.next_waypoint in actions_choose else random.choice(actions_choose)
 
         return action
 
@@ -155,8 +147,11 @@ class LearningAgent(Agent):
         # When learning, implement the value iteration update rule
         #   Use only the learning rate 'alpha' (do not use the discount factor 'gamma')
         if self.learning:
-            self.Q[str(state)][action] += self.alpha * (reward - self.Q[str(state)][action])
-
+            #self.Q[state][action] += self.alpha * reward
+            #self.Q[state][action] += self.alpha + (reward * self.alpha)
+            #self.Q[state][action] += self.alpha * (reward + self.Q[state][action])
+            #self.Q[state][action] += self.alpha * (reward - self.Q[state][action])
+            self.Q[state][action] = (self.Q[state][action] * (1 - self.alpha)) + (reward * self.alpha)
         return
 
 
